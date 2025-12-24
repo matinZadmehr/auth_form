@@ -432,6 +432,17 @@
             margin-bottom: 20px;
         }
         
+        /* Error Message */
+        .error-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #ffeaea;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #e74c3c;
+        }
+        
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -475,10 +486,11 @@
                     <div class="level-icon"><i class="fas fa-id-card"></i></div>
                     <div class="level-name">سطح ۱: احراز هویت پایه</div>
                 </div>
-                <p class="level-desc">برای حمل مرسوله های معمولی</p>
+                <p class="level-desc">مناسب برای خدمات عمومی و خریدهای کوچک</p>
                 <ul class="level-features">
                     <li><i class="fas fa-check-circle"></i> نام و نام خانوادگی</li>
                     <li><i class="fas fa-check-circle"></i> شماره تلفن همراه</li>
+                    <li><i class="fas fa-clock"></i> تأیید سریع (کمتر از ۲۴ ساعت)</li>
                 </ul>
             </div>
             
@@ -488,7 +500,7 @@
                     <div class="level-icon"><i class="fas fa-shield-alt"></i></div>
                     <div class="level-name">سطح ۲: احراز هویت پیشرفته</div>
                 </div>
-                <p class="level-desc">برای حمل مرسوله های قیمتی</p>
+                <p class="level-desc">مناسب برای خدمات ویژه، خریدهای بزرگ و تراکنش‌های مالی</p>
                 <ul class="level-features">
                     <li><i class="fas fa-check-circle"></i> تمامی اطلاعات سطح ۱</li>
                     <li><i class="fas fa-check-circle"></i> آدرس دقیق سکونت</li>
@@ -593,6 +605,12 @@
             </div>
         </div>
         
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px;"></i>
+            <p id="errorText">خطا در ارتباط با تلگرام. لطفاً دوباره تلاش کنید.</p>
+        </div>
+        
         <!-- Loading Indicator -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
@@ -609,15 +627,45 @@
     </div>
     
     <script>
-        // Initialize Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Expand the Web App to full screen
-        tg.MainButton.hide(); // Hide default button
-        
         // Global variables
         let selectedLevel = 0;
         let selfiePhoto = null;
         let cameraStream = null;
+        let tg = null;
+        
+        // Initialize Telegram Web App - FIXED FOR MOBILE
+        function initTelegramWebApp() {
+            // Check if we're in Telegram Web App
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                
+                // Set up Telegram Web App
+                tg.ready();
+                tg.expand(); // Expand to full screen
+                tg.MainButton.hide(); // Hide default button
+                
+                console.log('Telegram Web App initialized successfully');
+                console.log('Platform:', tg.platform);
+                console.log('Init data:', tg.initData);
+                
+                return true;
+            } else {
+                // Not in Telegram environment (for testing)
+                console.warn('Not in Telegram Web App environment');
+                showError('این برنامه فقط در محیط تلگرام کار می‌کند.');
+                return false;
+            }
+        }
+        
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('errorMessage').style.display = 'none';
+            }, 5000);
+        }
         
         // Level selection functions
         function selectLevel(level) {
@@ -692,7 +740,7 @@
             })
             .catch(err => {
                 console.error("Error accessing camera: ", err);
-                alert("دسترسی به دوربین امکان‌پذیر نیست. لطفاً دسترسی دوربین را فعال کنید.");
+                showError("دسترسی به دوربین امکان‌پذیر نیست. لطفاً دسترسی دوربین را فعال کنید.");
                 closeCamera();
             });
         }
@@ -744,24 +792,24 @@
             const phone = document.getElementById('phone').value.trim();
             
             if (!firstName) {
-                alert('لطفاً نام خود را وارد کنید');
+                showError('لطفاً نام خود را وارد کنید');
                 return false;
             }
             
             if (!lastName) {
-                alert('لطفاً نام خانوادگی خود را وارد کنید');
+                showError('لطفاً نام خانوادگی خود را وارد کنید');
                 return false;
             }
             
             if (!phone) {
-                alert('لطفاً شماره تلفن خود را وارد کنید');
+                showError('لطفاً شماره تلفن خود را وارد کنید');
                 return false;
             }
             
             // Simple phone validation for Iran
             const phoneRegex = /^09[0-9]{9}$/;
             if (!phoneRegex.test(phone)) {
-                alert('لطفاً شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
+                showError('لطفاً شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
                 return false;
             }
             
@@ -776,49 +824,53 @@
             const address = document.getElementById('address').value.trim();
             
             if (!firstName) {
-                alert('لطفاً نام خود را وارد کنید');
+                showError('لطفاً نام خود را وارد کنید');
                 return false;
             }
             
             if (!lastName) {
-                alert('لطفاً نام خانوادگی خود را وارد کنید');
+                showError('لطفاً نام خانوادگی خود را وارد کنید');
                 return false;
             }
             
             if (!phone) {
-                alert('لطفاً شماره تلفن خود را وارد کنید');
+                showError('لطفاً شماره تلفن خود را وارد کنید');
                 return false;
             }
             
             // Simple phone validation for Iran
             const phoneRegex = /^09[0-9]{9}$/;
             if (!phoneRegex.test(phone)) {
-                alert('لطفاً شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
+                showError('لطفاً شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
                 return false;
             }
             
             if (!address) {
-                alert('لطفاً آدرس دقیق سکونت خود را وارد کنید');
+                showError('لطفاً آدرس دقیق سکونت خود را وارد کنید');
                 return false;
             }
             
             if (!selfiePhoto) {
-                alert('لطفاً عکس سلفی خود را بگیرید');
+                showError('لطفاً عکس سلفی خود را بگیرید');
                 return false;
             }
             
             return true;
         }
         
-        // Form submission functions
+        // Form submission functions - FIXED FOR MOBILE
         function submitLevel1() {
             if (!validateLevel1()) return;
             
+            // Check if Telegram Web App is available
+            if (!tg) {
+                showError('خطا در ارتباط با تلگرام. لطفاً برنامه را مجدداً باز کنید.');
+                return;
+            }
+            
             // Show loading
             document.getElementById('loading').style.display = 'block';
-            document.querySelectorAll('.form-container, .buttons').forEach(el => {
-                el.style.display = 'none';
-            });
+            document.getElementById('level1Form').style.display = 'none';
             
             // Prepare data
             const data = {
@@ -828,35 +880,62 @@
                     first_name: document.getElementById('firstName').value.trim(),
                     last_name: document.getElementById('lastName').value.trim(),
                     phone: document.getElementById('phone').value.trim(),
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    user_id: tg.initDataUnsafe?.user?.id || 'unknown'
                 }
             };
             
-            // Send to Telegram bot
-            tg.sendData(JSON.stringify(data));
-            
-            // Show success message
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('successMessage').style.display = 'block';
+            // Send to Telegram bot - USING THE CORRECT METHOD
+            try {
+                // Method 1: Use sendData (works on both web and mobile)
+                tg.sendData(JSON.stringify(data));
                 
-                // Close after 3 seconds
+                console.log('Data sent successfully:', data);
+                
+                // Show success message
                 setTimeout(() => {
-                    tg.close();
-                }, 3000);
-            }, 1500);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Close after 3 seconds
+                    setTimeout(() => {
+                        if (tg && tg.close) {
+                            tg.close();
+                        } else {
+                            showSuccessMessage();
+                        }
+                    }, 3000);
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error sending data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('level1Form').style.display = 'block';
+                showError('خطا در ارسال اطلاعات. لطفاً دوباره تلاش کنید.');
+            }
         }
         
         function submitLevel2() {
             if (!validateLevel2()) return;
             
+            // Check if Telegram Web App is available
+            if (!tg) {
+                showError('خطا در ارتباط با تلگرام. لطفاً برنامه را مجدداً باز کنید.');
+                return;
+            }
+            
             // Show loading
             document.getElementById('loading').style.display = 'block';
-            document.querySelectorAll('.form-container, .buttons').forEach(el => {
-                el.style.display = 'none';
-            });
+            document.getElementById('level2Form').style.display = 'none';
             
-            // Prepare data
+            // Prepare data (compress selfie photo if too large)
+            let compressedSelfie = selfiePhoto;
+            
+            // Compress image if it's too large (more than 500KB)
+            if (selfiePhoto.length > 500000) {
+                compressedSelfie = compressImage(selfiePhoto);
+            }
+            
             const data = {
                 action: 'authentication_submitted',
                 level: 2,
@@ -865,35 +944,102 @@
                     last_name: document.getElementById('lastName2').value.trim(),
                     phone: document.getElementById('phone2').value.trim(),
                     address: document.getElementById('address').value.trim(),
-                    selfie_photo: selfiePhoto, // Base64 encoded image
-                    timestamp: new Date().toISOString()
+                    selfie_photo: compressedSelfie,
+                    timestamp: new Date().toISOString(),
+                    user_id: tg.initDataUnsafe?.user?.id || 'unknown'
                 }
             };
             
             // Send to Telegram bot
-            tg.sendData(JSON.stringify(data));
-            
-            // Show success message
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('successMessage').style.display = 'block';
+            try {
+                tg.sendData(JSON.stringify(data));
                 
-                // Close after 3 seconds
+                console.log('Data sent successfully (Level 2)');
+                
+                // Show success message
                 setTimeout(() => {
-                    tg.close();
-                }, 3000);
-            }, 1500);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Close after 3 seconds
+                    setTimeout(() => {
+                        if (tg && tg.close) {
+                            tg.close();
+                        } else {
+                            showSuccessMessage();
+                        }
+                    }, 3000);
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error sending data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('level2Form').style.display = 'block';
+                showError('خطا در ارسال اطلاعات. لطفاً دوباره تلاش کنید.');
+            }
+        }
+        
+        // Compress image function
+        function compressImage(dataUrl, quality = 0.6) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Calculate new dimensions (max 800px width)
+                    let width = img.width;
+                    let height = img.height;
+                    const maxWidth = 800;
+                    
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Compress to JPEG
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                img.src = dataUrl;
+            });
         }
         
         function cancelProcess() {
-            tg.close();
+            if (tg && tg.close) {
+                tg.close();
+            } else {
+                alert('عملیات لغو شد');
+            }
         }
         
-        // Handle Telegram events
-        tg.ready();
+        function showSuccessMessage() {
+            // Fallback if Telegram close doesn't work
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: white;">
+                    <h1>✅ موفقیت آمیز!</h1>
+                    <p>اطلاعات شما با موفقیت ارسال شد.</p>
+                    <p>می‌توانید این پنجره را ببندید.</p>
+                </div>
+            `;
+        }
         
-        // Initialize the app
+        // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Telegram Web App
+            const telegramInitialized = initTelegramWebApp();
+            
+            if (!telegramInitialized) {
+                // Show test mode warning
+                document.querySelector('.subtitle').innerHTML += 
+                    '<br><small style="color:#e74c3c;">(حالت تست - برای استفاده واقعی در تلگرام باز کنید)</small>';
+            }
+            
             // Set phone input to numeric keyboard on mobile
             document.querySelectorAll('input[type="tel"]').forEach(input => {
                 input.addEventListener('focus', function() {
@@ -907,6 +1053,38 @@
                     this.type = 'tel';
                 });
             });
+            
+            // Add test button for debugging (visible only in test mode)
+            if (!telegramInitialized) {
+                const testButton = document.createElement('button');
+                testButton.innerHTML = '🧪 تست ارسال داده';
+                testButton.style.cssText = `
+                    background: #f39c12;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 10px;
+                    margin: 20px auto;
+                    display: block;
+                    cursor: pointer;
+                `;
+                testButton.onclick = function() {
+                    alert('در حالت تست: داده‌ها در کنسول نمایش داده می‌شوند\nبرای استفاده واقعی، برنامه را در تلگرام باز کنید.');
+                    console.log('Test data would be sent here');
+                };
+                document.querySelector('.buttons').parentNode.insertBefore(testButton, document.querySelector('.buttons'));
+            }
+        });
+        
+        // Handle page visibility change (for mobile apps)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                // Page became visible again - reinitialize if needed
+                if (!tg && window.Telegram && window.Telegram.WebApp) {
+                    tg = window.Telegram.WebApp;
+                    tg.ready();
+                }
+            }
         });
     </script>
 </body>
