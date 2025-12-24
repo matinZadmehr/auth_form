@@ -42,7 +42,7 @@ if (!$data) {
 logData('Received from form:', $data);
 
 // CONFIGURATION - SET YOUR N8N WEBHOOK URL HERE
-$n8n_webhook_url = 'https://your-n8n-domain.com/webhook/auth-form'; // ← CHANGE THIS!
+$n8n_webhook_url = 'https://aistudio.didbi.com/webhook/form/auth'; // ← CHANGE THIS!
 
 // Validate webhook URL
 if (empty($n8n_webhook_url) || strpos($n8n_webhook_url, 'your-n8n-domain') !== false) {
